@@ -1,0 +1,10 @@
+python naomi_cli.py --path traffic_missing.csv
+
+
+The csv to be used as input must contain one column of time named "time" and one column of values named "value"
+--path: data path
+--window_size: imputation window size (default:50)
+--epoch: train epoch (default:200)
+--gpu: whether to use gpu or not (default: 0)
+
+
