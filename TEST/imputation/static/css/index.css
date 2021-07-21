@@ -1,0 +1,58 @@
+/* div{
+    border: 1px solid red;
+} */
+
+html, body{
+    font-family: "Segoe UI";
+    height: 100%;
+}
+
+
+.description{
+    text-align: center;
+    color: rgb(143, 143, 143);
+    margin: 10px;
+    padding-left: 40px;
+    padding-top:20px;
+}
+.row{
+    height: 100%;
+}
+
+.col{
+    padding-top: 20px;
+}
+
+.leftcol{
+    flex: 0 0 230px;
+    border-right: 1px solid rgb(212, 210, 210);
+    height: 450px;
+}
+.buttons{
+    /* border: 1px solid black; */
+    padding: 10px;
+    text-align: center;
+}
+
+.buttons2{
+    text-align: center;
+}
+
+.home{
+    font-weight: bold;
+    display: inline-block;
+    font-size: 20px;
+    color: rgb(255, 99, 132)
+}
+.header{
+    text-align: left;
+    padding:20px;
+    padding-left: 30px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid rgb(212, 210, 210, 0.5);
+}
+
+.lefts{
+    text-align: center;
+    padding: 10px;
+}

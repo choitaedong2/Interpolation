@@ -1,0 +1,475 @@
+{% load static %}
+<!DOCTYPE html>
+
+<html>
+    <head>
+        <title>Time Series Processer</title>
+        <!-- <link rel="stylesheet" href="{% static 'css/bootstrap.css' %}"> -->
+        <link
+            rel="stylesheet"
+            href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css"
+        />
+        <link rel="stylesheet" href="{% static 'css/index.css' %}" />
+
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    </head>
+
+    <body>
+        <div class="header">
+            <h1 class="home">Time Series Processer</h1>
+        </div>
+
+        <div class="contents">
+            <div class="row">
+                <div class="col leftcol">
+                    <div class="buttons lefts">
+                        <input
+                            type="file"
+                            id="uploadCSV"
+                            name="getCSV"
+                            class="btn btn-secondary"
+                            style="width: 230px"
+                        />
+                    </div>
+                    <div class="lefts">
+                        <div class="buttons">
+                            <button
+                                id="visualize"
+                                onclick="visualize();"
+                                class="btn btn-info"
+                                style="width: 230px; margin: 5px"
+                            >
+                                시각화
+                            </button>
+                        </div>
+
+                        <div class="buttons" style="margin-top: 20px">
+                            <div style="margin: 5px">
+                                <div class="input-group mb-3">
+                                    <div class="input-group-prepend" style="width: 50%">
+                                        <span
+                                            class="input-group-text"
+                                            style="
+                                                display: inline-block;
+                                                width: 100%;
+                                                text-align: center;
+                                            "
+                                            >훈련 횟수</span
+                                        >
+                                    </div>
+                                    <input
+                                        id="epoch"
+                                        class="form-control"
+                                        type="number"
+                                        min="1"
+                                        max="500"
+                                        value="100"
+                                        name="epoch"
+                                    />
+                                </div>
+                                <div class="input-group mb-3">
+                                    <div class="input-group-prepend" style="width: 50%">
+                                        <span
+                                            class="input-group-text"
+                                            style="
+                                                display: inline-block;
+                                                width: 100%;
+                                                text-align: center;
+                                            "
+                                            >윈도우 크기</span
+                                        >
+                                    </div>
+                                    <input
+                                        id="windowsize"
+                                        class="form-control"
+                                        type="number"
+                                        min="10"
+                                        max="1000"
+                                        value="50"
+                                    />
+                                </div>
+                            </div>
+                            <button
+                                id="imputation"
+                                onclick="imputation($('#epoch').val(), $('#windowsize').val());"
+                                class="btn btn-info"
+                                style="width: 230px; margin: 5px"
+                            >
+                                보간
+                            </button>
+                            <button
+                                onclick="downloadDemo()"
+                                class="btn btn-info"
+                                style="width: 230px; margin-top: 35px"
+                            >
+                                테스트 파일 다운로드
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="col" style="width: 200px">
+                    <div style="width: 100%">
+                        <div style="width: 100%; height: 150px">
+                            <canvas id="visual"></canvas>
+                        </div>
+                        <div style="width: 100%; height: 150px">
+                            <canvas id="impute" width="100" height="20"></canvas>
+                        </div>
+                        <div style="padding: 10px">
+                            <div class="progress">
+                                <div
+                                    id="progress"
+                                    class="progress-bar bg-danger"
+                                    style="width: 0%"
+                                ></div>
+                            </div>
+                            <div id="cur" style="text-align: center">0/0</div>
+                        </div>
+                        <div style="text-align: center">
+                            <div id="download" style="display: inline-block; margin: 5px"></div>
+                            <div id="stop" style="display: inline-block; margin: 5px"></div>
+                            <div id="more" style="display: inline-block; margin: 5px"></div>
+                        </div>
+                        <script>
+                            var labels = [],
+                                data = [];
+                            var visual = document.getElementById("visual").getContext("2d");
+                            var impute = document.getElementById("impute").getContext("2d");
+
+                            var option1 = {
+                                type: "line",
+                                data: {
+                                    labels: labels,
+                                    datasets: [
+                                        {
+                                            label: "Time Series",
+                                            data: data,
+                                            borderColor: "rgba(255, 99, 132,1)",
+                                            pointRadius: 0.0,
+                                            borderWidth: 1,
+                                        },
+                                    ],
+                                },
+                                options: {
+                                    responsive: true,
+                                    maintainAspectRatio: false,
+                                    scales: {
+                                        xAxis: {
+                                            ticks: [
+                                                {
+                                                    display: false,
+                                                },
+                                            ],
+                                        },
+                                    },
+                                    plugins: {
+                                        legend: {
+                                            display: false,
+                                        },
+                                        title: {
+                                            display: true,
+                                            text: "",
+                                        },
+                                    },
+                                },
+                            };
+
+                            var option2 = {
+                                type: "line",
+                                data: {
+                                    labels: labels,
+                                    datasets: [
+                                        {
+                                            label: "Time Series",
+                                            data: data,
+                                            borderColor: "rgba(255, 99, 132,1)",
+                                            pointRadius: 0.0,
+                                            borderWidth: 1,
+                                        },
+                                    ],
+                                },
+                                options: {
+                                    responsive: true,
+                                    maintainAspectRatio: false,
+                                    scales: {
+                                        xAxis: {
+                                            ticks: [
+                                                {
+                                                    display: false,
+                                                },
+                                            ],
+                                        },
+                                    },
+                                    plugins: {
+                                        legend: {
+                                            display: false,
+                                        },
+                                        title: {
+                                            display: true,
+                                            text: "",
+                                        },
+                                    },
+                                },
+                            };
+                            var visualChart = new Chart(visual, option1);
+                            visualChart.options.plugins.title.text = "Real";
+
+                            var imputeChart = new Chart(impute, option2);
+                            imputeChart.options.plugins.title.text = "Imputed";
+
+                            imputeChart.update();
+                            visualChart.update();
+
+                            function draw(chart, label, data) {
+                                chart.data.datasets[0].data = data;
+                                chart.data.labels = label;
+                                chart.update();
+                            }
+                        </script>
+                    </div>
+                </div>
+            </div>
+            <div class="row" style="border-top: 1px solid rgb(212, 210, 210)">
+                <div class="description">
+                    csv파일은 반드시 "time", "value" column을 포함해야 합니다.
+                </div>
+            </div>
+        </div>
+
+        <script>
+            var uid;
+            $(document).ready(function () {
+                uid = Math.random().toString(36).substr(2, 16);
+            });
+
+            $(window).on("beforeunload", function () {
+                var form = new FormData();
+                form.append("uid", uid);
+                $.ajax("delete/", {
+                    method: "POST",
+                    data: form,
+                    processData: false,
+                    contentType: false,
+                    success: function (response) {},
+                    error: function (request, status, error) {
+                        console.log(
+                            "code:" +
+                                request.status +
+                                "\n" +
+                                "message:" +
+                                request.responseText +
+                                "\n" +
+                                "error:" +
+                                error
+                        );
+                    },
+                });
+            });
+
+            function downloadDemo() {
+                var link = document.createElement("a");
+                link.href = "{% static 'csv/traffic_missing.csv' %}";
+                link.click();
+            }
+
+            var iter = 0;
+            var totalIter = 0;
+            function visualize() {
+                var form = new FormData();
+                form.append("getCSV", $("#uploadCSV")[0].files[0]);
+                $.ajax("visualize/", {
+                    method: "POST",
+                    data: form,
+                    processData: false,
+                    contentType: false,
+                    success: function (response) {
+                        draw(visualChart, response.label, response.value);
+                    },
+                    error: function (request, status, error) {
+                        console.log(
+                            "code:" +
+                                request.status +
+                                "\n" +
+                                "message:" +
+                                request.responseText +
+                                "\n" +
+                                "error:" +
+                                error
+                        );
+                    },
+                });
+            }
+            function imputationR() {
+                var cur = (1 - iter / totalIter) * 100;
+                $("#cur").html(totalIter - iter + "/" + totalIter);
+                $("#progress").css("width", cur + "%");
+                if (iter <= 0) {
+                    $("#stop").html("");
+
+                    $("#download").html(
+                        `<button
+                                onclick="download();"
+                                class="btn btn-dark"
+                                style="width: 150px; margin: 5px"
+                            >
+                                다운로드
+                            </button>`
+                    );
+
+                    $("#more").html(
+                        `
+                    <div class="input-group">
+                        <input
+                            id="addepoch"
+                            class="form-control"
+                            type="number"
+                            min="1"
+                            max="500"
+                            value="10"
+                            name="epoch"
+                        />
+
+                        <div class="input-group-append">
+                            <button
+                            onclick="additionalTrain($('#addepoch').val());"
+                            class="btn btn-dark"
+                        >
+                            추가학습
+                            </button>
+                        </div>
+
+                    </div>
+
+                    `
+                    );
+                    return;
+                }
+
+                var form = new FormData();
+                form.append("uid", uid);
+                $.ajax("imputationProcess/", {
+                    method: "POST",
+                    data: form,
+                    processData: false,
+                    contentType: false,
+                    success: function (response) {
+                        draw(imputeChart, response.label, response.value);
+                        iter -= 1;
+                        imputationR();
+                    },
+                    error: function (request, status, error) {
+                        console.log(
+                            "code:" +
+                                request.status +
+                                "\n" +
+                                "message:" +
+                                request.responseText +
+                                "\n" +
+                                "error:" +
+                                error
+                        );
+                    },
+                });
+            }
+
+            function imputation(num, windowsize) {
+                totalIter = parseInt(num);
+                iter = num - 1;
+
+                $("#stop").html(
+                    `
+                    <button
+                                onclick="stopTrain();"
+                                class="btn btn-dark"
+                                style="width: 150px; margin: 5px"
+                            >
+                                훈련중지
+                            </button>`
+                );
+
+                var form = new FormData();
+                form.append("getCSV", $("#uploadCSV")[0].files[0]);
+                form.append("windowsize", windowsize);
+                form.append("uid", uid);
+                $.ajax("imputation/", {
+                    method: "POST",
+                    data: form,
+                    processData: false,
+                    contentType: false,
+                    success: function (response) {
+                        draw(imputeChart, response.label, response.value);
+                        imputationR();
+                    },
+                    error: function (request, status, error) {
+                        console.log(
+                            "code:" +
+                                request.status +
+                                "\n" +
+                                "message:" +
+                                request.responseText +
+                                "\n" +
+                                "error:" +
+                                error
+                        );
+                    },
+                });
+            }
+            function stopTrain() {
+                $("#stop").html("");
+                totalIter -= iter;
+                iter = 1;
+            }
+
+            function additionalTrain(num) {
+                totalIter = parseInt(totalIter) + parseInt(num);
+                iter = parseInt(num);
+                $("#stop").html(
+                    `
+                    <button
+                                onclick="stopTrain();"
+                                class="btn btn-dark"
+                                style="width: 150px; margin: 5px"
+                            >
+                                훈련중지
+                            </button>`
+                );
+
+                $("#download").html("");
+                $("#more").html("");
+                imputationR();
+            }
+
+            function download() {
+                var form = new FormData();
+                form.append("uid", uid);
+                $.ajax("save/", {
+                    method: "POST",
+                    data: form,
+                    processData: false,
+                    contentType: false,
+                    success: function (response) {
+                        var src = response.src;
+                        var link = document.createElement("a");
+                        link.download = "result.csv";
+                        link.href = src;
+                        link.click();
+                    },
+                    error: function (request, status, error) {
+                        console.log(
+                            "code:" +
+                                request.status +
+                                "\n" +
+                                "message:" +
+                                request.responseText +
+                                "\n" +
+                                "error:" +
+                                error
+                        );
+                    },
+                });
+            }
+        </script>
+    </body>
+</html>
